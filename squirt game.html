@@ -1,0 +1,385 @@
+<style>
+	h1, marquee {
+		color: #FFFFFF;
+		font-family: Consolas;
+	}
+</style>
+
+<body style = 'background-color:black;'>
+	<h1 style = 'text-align: center;'>Squirt Game</h1>
+	<marquee id = 'tip'>W, A, S, D to move. 'Space' to shoot. To win, get 30 kills. Don't die, and don't run out of ammo, otherwise, you lose!</marquee>
+	<canvas id = 'canvas' 
+			style = 'display: block; 
+					 padding-left: 0; 
+					 padding-right: 0; 
+					 margin-left: auto; 
+					 margin-right: auto; 
+					 border: 2px solid black; 
+					 text-align: center;' 
+			width = '800' 
+			height = '600'>
+	</canvas>
+	<p id = 'playerHealthText'>Your Health: 5</p>
+	<p id = 'playerAmmoText'>Your Ammuntions: 10</p>
+	<p id = 'playerKillsText'>Your Kills: 0</p>
+</body>
+
+<script>
+	var canvas = document.getElementById('canvas')
+	var ctx = canvas.getContext('2d')
+	
+	var numberOfKillsToWin = 30
+	var ammoOnKill = 2
+	
+	var playerHealthText = document.getElementById('playerHealthText')
+	var playerAmmoText = document.getElementById('playerAmmoText')
+	var playerKillsText = document.getElementById('playerKillsText')
+	var tip = document.getElementById('tip')
+	
+	var playerX = 362.5
+	var playerY = 525
+	var playerWidth = 75
+	var playerHeight = 56
+	var playerHealth = 5
+	var playerAmmo = 5
+	var playerKills = 0
+	var playerDeaths = 0
+	var playerSpeed = 25
+
+	var playerBulletX = 0
+	var playerBulletY = 0
+	var playerBulletWidth = 10
+	var playerBulletHeight = 10
+	var playerBulletSpeed = 25
+	var playerBulletShow = false
+	
+	var enemiesSpeed = 1
+	var enemiesWidth = 75
+	var enemiesHeight = 56
+	
+	var enemy1X = Math.floor(Math.random() * canvas.width) + 0
+	var enemy1Y = 0
+	var enemy1Alive = true
+	var enemy1Direction = Math.floor(Math.random() * 2) + 1
+	
+	var enemy2X = Math.floor(Math.random() * canvas.width) + 0
+	var enemy2Y = 61
+	var enemy2Alive = true
+	var enemy2Direction = Math.floor(Math.random() * 2) + 1
+	
+	var enemy3X = Math.floor(Math.random() * canvas.width) + 0
+	var enemy3Y = 122
+	var enemy3Alive = true
+	var enemy3Direction = Math.floor(Math.random() * 2) + 1
+	
+	var enemiesBulletSpeed = 0.5
+	var enemiesBulletWidth = 50
+	var enemiesBulletHeight = 50
+	
+	var enemiesBulletWaitCounter = 0
+	
+	var enemy1BulletX = enemy1X + 32.5
+	var enemy1BulletY = enemy1Y
+	var enemy1BulletShow = false
+	
+	var enemy2BulletX = enemy2X + 32.5
+	var enemy2BulletY = enemy2Y
+	var enemy2BulletShow = false
+	
+	var enemy3BulletX = enemy3X + 32.5
+	var enemy3BulletY = enemy3Y
+	var enemy3BulletShow = false
+	
+	function keydown(key) {
+		//console.log(key.keyCode)
+	
+		//console.log(playerX)
+		//console.log(playerY)
+		//console.log('--')
+	
+		if (key.keyCode === 87) {
+			playerY -= playerSpeed
+		}
+		if (key.keyCode === 83) {
+			playerY += playerSpeed
+		}
+		if (key.keyCode === 65) {
+			playerX -= playerSpeed
+		}
+		if (key.keyCode === 68) {
+			playerX += playerSpeed
+		}
+		if (key.keyCode === 32 && playerAmmo > 0) {
+			playerBulletShow = true
+			playerAmmo -= 1
+		}
+	}
+
+	function clear() {
+		ctx.fillStyle = '#000000'
+		ctx.fillRect(0, 0, canvas.width, canvas.height)
+	}
+	
+	function collision(aX, aY, aW, aH, bX, bY, bW, bH) {
+		return (
+			aX + aW >= bX &&
+			bX + bW >= aX &&
+			aY + aH >= bY &&
+			bY + bH >= aY
+		)
+	}
+	
+	function player() {
+		if (playerX < 0) {
+			playerX = 0
+		}
+		
+		if (playerX + playerWidth > canvas.width) {
+			playerX = canvas.width - playerWidth
+		}
+		
+		if (playerY < 425) {
+			playerY = 425
+		}
+		
+		if (playerY + playerHeight > canvas.height) {
+			playerY = canvas.height - playerHeight
+		}
+		
+		ctx.fillStyle = '#FFFFFF'
+		ctx.fillRect(playerX, playerY, playerWidth, playerHeight)
+		ctx.fillRect(playerX + 28.125, playerY - 18.75, 18.75, 18.75)
+	}
+
+	function playerBullet() {
+		if (playerBulletShow) {
+			if (playerBulletY >= 0) {
+				playerBulletY -= playerBulletSpeed
+			} 
+			if (playerBulletY < 0) {
+				playerBulletShow = false
+			}
+			ctx.fillStyle = '#FFFFFF'
+			ctx.fillRect(playerBulletX, playerBulletY, playerBulletWidth, playerBulletHeight)
+		}
+		if (!playerBulletShow) {
+			playerBulletX = playerX + 32.5
+			playerBulletY = playerY
+		}
+		if (collision(playerBulletX, playerBulletY, playerBulletWidth, playerBulletHeight, enemy1X, enemy1Y, enemiesWidth, enemiesHeight) && enemy1Alive) {
+			playerBulletShow = false
+			enemy1Alive = false
+			playerKills += 1
+			playerAmmo += ammoOnKill
+		}
+		if (collision(playerBulletX, playerBulletY, playerBulletWidth, playerBulletHeight, enemy2X, enemy2Y, enemiesWidth, enemiesHeight) && enemy2Alive) {
+			playerBulletShow = false
+			enemy2Alive = false
+			playerKills += 1
+			playerAmmo += ammoOnKill
+		}
+		if (collision(playerBulletX, playerBulletY, playerBulletWidth, playerBulletHeight, enemy3X, enemy3Y, enemiesWidth, enemiesHeight && enemy3Alive)) {
+			playerBulletShow = false
+			enemy3Alive = false
+			playerKills += 1
+			playerAmmo += ammoOnKill
+		}
+	}
+
+	function enemiesBullet() {
+		enemiesBulletWaitCounter += 1
+		
+		if (enemiesBulletWaitCounter === 5) {
+			enemiesBulletWaitCounter = 0
+		
+			enemy1BulletShow = true
+			enemy2BulletShow = true
+			enemy3BulletShow = true
+		}
+	
+		if (enemy1BulletShow && enemy1Alive) {
+			if (enemy1BulletY <= canvas.height) {
+				enemy1BulletY += enemiesBulletSpeed
+			} 
+			if (enemy1BulletY > canvas.height) {
+				enemy1BulletShow = false
+			}
+			ctx.fillStyle = '#ff0008'
+			ctx.fillRect(enemy1BulletX, enemy1BulletY, enemiesBulletWidth, enemiesBulletHeight)
+		}
+		if (!enemy1BulletShow) {
+			enemy1BulletX = enemy1X + 32.5
+			enemy1BulletY = enemy1Y
+		}
+		
+		if (enemy2BulletShow && enemy2Alive) {
+			if (enemy2BulletY <= canvas.height) {
+				enemy2BulletY += enemiesBulletSpeed
+			} 
+			if (enemy2BulletY > canvas.height) {
+				enemy2BulletShow = false
+			}
+			ctx.fillStyle = '#ff0008'
+			ctx.fillRect(enemy2BulletX, enemy2BulletY, enemiesBulletWidth, enemiesBulletHeight)
+		}
+		if (!enemy2BulletShow && enemy3Alive) {
+			enemy2BulletX = enemy2X + 32.5
+			enemy2BulletY = enemy2Y
+		}
+		
+		if (enemy3BulletShow) {
+			if (enemy3BulletY <= canvas.height) {
+				enemy3BulletY += enemiesBulletSpeed
+			} 
+			if (enemy3BulletY > canvas.height) {
+				enemy3BulletShow = false
+			}
+			ctx.fillStyle = '#ff0008'
+			ctx.fillRect(enemy3BulletX, enemy3BulletY, enemiesBulletWidth, enemiesBulletHeight)
+		}
+		if (!enemy3BulletShow) {
+			enemy3BulletX = enemy3X + 32.5
+			enemy3BulletY = enemy3Y
+		}
+		
+		if (collision(enemy1BulletX, enemy1BulletX, enemiesBulletWidth, enemiesBulletHeight, playerX, playerY, playerWidth, playerHeight) && playerHealth > 0) {
+			console.log('1')
+			enemy1BulletShow = false
+			playerHealth -= 1
+		}
+		if (collision(enemy2BulletX, enemy2BulletX, enemiesBulletWidth, enemiesBulletHeight, playerX, playerY, playerWidth, playerHeight) && playerHealth > 0) {
+			console.log('2')
+			enemy2BulletShow = false
+			playerHealth -= 1
+		}
+		if (collision(enemy3BulletX, enemy3BulletX, enemiesBulletWidth, enemiesBulletHeight, playerX, playerY, playerWidth, playerHeight) && playerHealth > 0) {
+			console.log('3')
+			enemy3BulletShow = false
+			playerHealth -= 1
+		}
+	}
+
+	function enemies() {
+		if (!enemy1Alive && !enemy2Alive && !enemy3Alive) {
+			enemy1Alive = true
+			enemy2Alive = true
+			enemy3Alive = true
+			
+			enemy1Direction = Math.floor(Math.random() * 2) + 1
+			enemy2Direction = Math.floor(Math.random() * 2) + 1
+			enemy3Direction = Math.floor(Math.random() * 2) + 1
+		}
+		//canvas collision
+		if (enemy1X < 0) {
+			enemy1X = canvas.width - enemiesWidth
+		}
+		
+		if (enemy1X + enemiesWidth > canvas.width) {
+			enemy1X = 0
+		}
+		
+		if (enemy2X < 0) {
+			enemy2X = canvas.width - enemiesWidth
+		}
+		
+		if (enemy2X + enemiesWidth > canvas.width) {
+			enemy2X = 0
+		}
+		
+		if (enemy3X < 0) {
+			enemy3X = canvas.width - enemiesWidth
+		}
+		
+		if (enemy3X + enemiesWidth > canvas.width) {
+			enemy3X = 0
+		}
+		
+		//movement
+		if (enemy1Direction === 2) {
+			enemy1X -= enemiesSpeed
+		}
+		
+		if (enemy1Direction === 1) {
+			enemy1X += enemiesSpeed
+		}
+		
+		if (enemy2Direction === 2) {
+			enemy2X -= enemiesSpeed
+		}
+		
+		if (enemy2Direction === 1) {
+			enemy2X += enemiesSpeed
+		}
+		
+		if (enemy3Direction === 2) {
+			enemy3X -= enemiesSpeed
+		}
+		
+		if (enemy3Direction === 1) {
+			enemy3X += enemiesSpeed
+		}
+		
+		//drawing
+		if (enemy1Alive) {
+			ctx.fillStyle = '#FFFFFF'
+			ctx.fillRect(enemy1X + 18.75, enemy1Y, 37.5, 23)
+			
+			ctx.fillStyle = '#a6a6a6'
+			ctx.fillRect(enemy1X, enemy1Y + 23, 75, 23)
+			ctx.fillRect(enemy1X + 21.5, enemy1Y + 46, 32, 10)
+		}
+		
+		if (enemy2Alive) {
+			ctx.fillStyle = '#FFFFFF'
+			ctx.fillRect(enemy2X + 18.75, enemy2Y, 37.5, 23)
+			
+			ctx.fillStyle = '#a6a6a6'
+			ctx.fillRect(enemy2X, enemy2Y + 23, 75, 23)
+			ctx.fillRect(enemy2X + 21.5, enemy2Y + 46, 32, 10)
+		}
+		
+		if (enemy3Alive) {
+			ctx.fillStyle = '#FFFFFF'
+			ctx.fillRect(enemy3X + 18.75, enemy3Y, 37.5, 23)
+			
+			ctx.fillStyle = '#a6a6a6'
+			ctx.fillRect(enemy3X, enemy3Y + 23, 75, 23)
+			ctx.fillRect(enemy3X + 21.5, enemy3Y + 46, 32, 10)
+		}
+	}
+
+	function texts() {
+		playerHealthText.innerHTML = '<h1>Your Health: ' + String(playerHealth) + '</h1>'
+		playerAmmoText.innerHTML = '<h1>Your Ammuntions: ' + String(playerAmmo) + '</h1>'
+		playerKillsText.innerHTML = '<h1>Your Kills: ' + String(playerKills) + '</h1>'
+		tip.innerHTML = "W, A, S, D to move 'Space' to shoot To win, get " + String(numberOfKillsToWin) + " kills Don't die, and don't run out of ammo, otherwise, you lose!"
+	}
+
+	function screen() {
+		if (playerHealth > 0 && playerAmmo > 0 && playerKills < numberOfKillsToWin) {
+			clear()
+			texts()
+			playerBullet()
+			enemiesBullet()
+			player()
+			enemies()
+		}
+		if (playerHealth < 1 || playerAmmo < 1) {
+			alert('You Lose! Try again!')
+			playerHealth = 5
+			playerAmmo = 10
+			playerKills = 0
+		}
+		if (playerKills >= numberOfKillsToWin) {
+			alert('You Win! Try again?')
+			playerHealth = 5
+			playerAmmo = 10
+			playerKills = 0
+		}
+	}
+	
+	window.onload = function() {
+		document.addEventListener('keydown', keydown)
+		setInterval(screen, 1)
+	}
+</script>
